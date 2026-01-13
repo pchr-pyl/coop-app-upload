@@ -12,7 +12,8 @@ const fileSheet = ss.getSheetByName("Files") || ss.insertSheet("Files");
  * รองรับการเรียกจากเว็บภายนอก (Vercel)
  */
 function doGet(e) {
-  const action = e.parameter.action || 'mapping';
+  // ตรวจสอบ e และ e.parameter ให้ปลอดภัย
+  const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'mapping';
   let result;
   
   if (action === 'mapping') {
