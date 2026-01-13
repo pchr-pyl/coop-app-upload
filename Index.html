@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบส่งใบสมัครงานสหกิจฯ มหาวิทยาลัยวลัยลักษณ์</title>
+    <meta name="description"
+        content="ระบบส่งใบสมัครงานสหกิจศึกษา มหาวิทยาลัยวลัยลักษณ์ - อัปโหลดเอกสาร 4 รายการ ระบบจะรวมเป็นไฟล์เดียวอัตโนมัติ">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Prompt for Thai -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- PDF-LIB -->
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'prompt': ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        'wu': {
+                            50: '#f0f4ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+        }
+
+        .loader {
+            border-top-color: #4f46e5;
+            animation: spinner 1s linear infinite;
+        }
+
+        @keyframes spinner {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .file-group {
+            transition: all 0.3s ease;
+        }
+
+        .file-group:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-group.completed {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+
+        .file-group.completed .icon-upload {
+            color: #10b981;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen gradient-bg flex items-center justify-center p-4">
+
+    <div class="glass-card w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden">
+
+        <!-- Status Bar -->
+        <div id="lib-status"
+            class="hidden bg-red-50 text-red-600 text-center text-sm py-2 px-4 border-b border-red-200">
+            <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+            ระบบ PDF ไม่พร้อมใช้งาน กรุณารีเฟรชหน้าจอ
+        </div>
+
+        <!-- Header -->
+        <div class="gradient-bg p-8 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-4">
+                <i class="fa-solid fa-file-signature text-3xl text-white"></i>
+            </div>
+            <h1 class="text-2xl md:text-3xl font-bold text-white mb-2">
+                ระบบส่งใบสมัครงานสหกิจฯ
+            </h1>
+            <p class="text-white/80 text-sm">
+                มหาวิทยาลัยวลัยลักษณ์ | Walailak University
+            </p>
+            <p class="text-white/60 text-xs mt-2">
+                <i class="fa-solid fa-info-circle mr-1"></i>
+                อัปโหลดเอกสาร 4 รายการ ระบบจะรวมเป็นไฟล์เดียวอัตโนมัติ
+            </p>
+        </div>
+
+        <!-- Form -->
+        <div class="p-6 md:p-8 space-y-6">
+
+            <!-- Section 1: Student Info -->
+            <div class="space-y-4">
+                <h3 class="text-gray-700 font-semibold flex items-center">
+                    <i class="fa-solid fa-user-graduate mr-2 text-wu-600"></i>
+                    ข้อมูลนักศึกษา
+                </h3>
+
+                <!-- Faculty -->
+                <div>
+                    <label class="block text-gray-600 text-sm font-medium mb-2">สำนักวิชา (School)</label>
+                    <div class="relative">
+                        <select id="faculty" onchange="onFacultyChange()"
+                            class="w-full bg-gray-50 border border-gray-200 text-gray-700 py-3 px-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-wu-500 focus:border-transparent appearance-none cursor-pointer transition">
+                            <option value="" disabled selected>กำลังโหลดข้อมูล...</option>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                            <i class="fa-solid fa-chevron-down text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Course -->
+                <div>
+                    <label class="block text-gray-600 text-sm font-medium mb-2">หลักสูตร (Program)</label>
+                    <div class="relative">
+                        <select id="course" disabled
+                            class="w-full bg-gray-100 border border-gray-200 text-gray-400 py-3 px-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-wu-500 focus:border-transparent appearance-none cursor-not-allowed transition">
+                            <option value="" disabled selected>กรุณาเลือกสำนักวิชาก่อน</option>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                            <i class="fa-solid fa-chevron-down text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Details -->
+                <div class="grid grid-cols-2 md:grid-cols-10 gap-3">
+                    <div class="col-span-2 md:col-span-3">
+                        <label class="block text-gray-600 text-xs mb-1">รหัสนักศึกษา</label>
+                        <input type="text" id="studentId" placeholder="เช่น 64000000" maxlength="8"
+                            class="w-full bg-gray-50 border border-gray-200 text-gray-700 py-2.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-wu-500 focus:border-transparent transition">
+                    </div>
+                    <div class="col-span-1 md:col-span-2">
+                        <label class="block text-gray-600 text-xs mb-1">คำนำหน้า</label>
+                        <select id="titleName"
+                            class="w-full bg-gray-50 border border-gray-200 text-gray-700 py-2.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-wu-500 focus:border-transparent appearance-none cursor-pointer transition">
+                            <option value="" disabled selected>เลือก</option>
+                            <option value="นาย">นาย</option>
+                            <option value="นาง">นาง</option>
+                            <option value="นางสาว">นางสาว</option>
+                        </select>
+                    </div>
+                    <div class="col-span-1 md:col-span-2">
+                        <label class="block text-gray-600 text-xs mb-1">ชื่อจริง</label>
+                        <input type="text" id="firstName" placeholder="ภาษาไทย"
+                            class="w-full bg-gray-50 border border-gray-200 text-gray-700 py-2.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-wu-500 focus:border-transparent transition">
+                    </div>
+                    <div class="col-span-2 md:col-span-3">
+                        <label class="block text-gray-600 text-xs mb-1">นามสกุล</label>
+                        <input type="text" id="lastName" placeholder="ภาษาไทย"
+                            class="w-full bg-gray-50 border border-gray-200 text-gray-700 py-2.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-wu-500 focus:border-transparent transition">
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-gray-200">
+
+            <!-- Section 2: File Uploads -->
+            <div class="space-y-4">
+                <h3 class="text-gray-700 font-semibold flex items-center">
+                    <i class="fa-regular fa-file-pdf mr-2 text-wu-600"></i>
+                    เอกสารประกอบการสมัคร
+                    <span class="text-xs font-normal text-red-500 ml-2">(PDF ไม่เกิน 2MB/ไฟล์)</span>
+                </h3>
+
+                <div class="grid grid-cols-1 gap-3">
+                    <!-- File 1 -->
+                    <div class="file-group border-2 border-dashed border-gray-200 rounded-xl p-4 flex items-center justify-between"
+                        id="box-file1">
+                        <div class="flex items-center">
+                            <div class="bg-wu-100 p-3 rounded-full mr-4 icon-upload text-wu-600">
+                                <i class="fa-solid fa-file-signature text-lg"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-gray-700">1. ใบสมัครงาน</p>
+                                <p class="text-xs text-gray-400 file-name">ยังไม่ได้เลือกไฟล์</p>
+                            </div>
+                        </div>
+                        <label
+                            class="cursor-pointer bg-wu-50 hover:bg-wu-100 border border-wu-200 text-wu-700 text-xs font-semibold py-2 px-4 rounded-lg transition">
+                            เลือกไฟล์
+                            <input type="file" id="file1" accept="application/pdf" class="hidden"
+                                onchange="updateFileStatus(1)">
+                        </label>
+                    </div>
+
+                    <!-- File 2 -->
+                    <div class="file-group border-2 border-dashed border-gray-200 rounded-xl p-4 flex items-center justify-between"
+                        id="box-file2">
+                        <div class="flex items-center">
+                            <div class="bg-wu-100 p-3 rounded-full mr-4 icon-upload text-wu-600">
+                                <i class="fa-regular fa-address-card text-lg"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-gray-700">2. เรซูเม่ (Resume)</p>
+                                <p class="text-xs text-gray-400 file-name">ยังไม่ได้เลือกไฟล์</p>
+                            </div>
+                        </div>
+                        <label
+                            class="cursor-pointer bg-wu-50 hover:bg-wu-100 border border-wu-200 text-wu-700 text-xs font-semibold py-2 px-4 rounded-lg transition">
+                            เลือกไฟล์
+                            <input type="file" id="file2" accept="application/pdf" class="hidden"
+                                onchange="updateFileStatus(2)">
+                        </label>
+                    </div>
+
+                    <!-- File 3 -->
+                    <div class="file-group border-2 border-dashed border-gray-200 rounded-xl p-4 flex items-center justify-between"
+                        id="box-file3">
+                        <div class="flex items-center">
+                            <div class="bg-wu-100 p-3 rounded-full mr-4 icon-upload text-wu-600">
+                                <i class="fa-solid fa-graduation-cap text-lg"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-gray-700">3. ใบแสดงผลการเรียน</p>
+                                <p class="text-xs text-gray-400 file-name">ยังไม่ได้เลือกไฟล์</p>
+                            </div>
+                        </div>
+                        <label
+                            class="cursor-pointer bg-wu-50 hover:bg-wu-100 border border-wu-200 text-wu-700 text-xs font-semibold py-2 px-4 rounded-lg transition">
+                            เลือกไฟล์
+                            <input type="file" id="file3" accept="application/pdf" class="hidden"
+                                onchange="updateFileStatus(3)">
+                        </label>
+                    </div>
+
+                    <!-- File 4 -->
+                    <div class="file-group border-2 border-dashed border-gray-200 rounded-xl p-4 flex items-center justify-between"
+                        id="box-file4">
+                        <div class="flex items-center">
+                            <div class="bg-wu-100 p-3 rounded-full mr-4 icon-upload text-wu-600">
+                                <i class="fa-solid fa-certificate text-lg"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-gray-700">4. ใบประกาศนียบัตร</p>
+                                <p class="text-xs text-gray-400 file-name">ยังไม่ได้เลือกไฟล์</p>
+                            </div>
+                        </div>
+                        <label
+                            class="cursor-pointer bg-wu-50 hover:bg-wu-100 border border-wu-200 text-wu-700 text-xs font-semibold py-2 px-4 rounded-lg transition">
+                            เลือกไฟล์
+                            <input type="file" id="file4" accept="application/pdf" class="hidden"
+                                onchange="updateFileStatus(4)">
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button id="submit-btn" onclick="processAndUpload()"
+                class="btn-primary w-full text-white font-bold py-4 px-6 rounded-xl flex justify-center items-center text-lg shadow-lg">
+                <span id="btn-text">
+                    <i class="fa-solid fa-paper-plane mr-2"></i>
+                    รวมไฟล์และส่งใบสมัคร
+                </span>
+                <span id="btn-loader"
+                    class="loader border-4 border-white/30 border-t-white rounded-full h-6 w-6 hidden"></span>
+            </button>
+
+            <p id="status-text" class="text-center text-sm text-gray-500 min-h-[24px]"></p>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-gray-50 p-4 text-center border-t">
+            <p class="text-gray-400 text-xs">
+                &copy; 2024 ระบบรับสมัครงานนักศึกษา | Cooperative Education, Walailak University
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // ===== CONFIG =====
+        const API_URL = "https://script.google.com/macros/s/AKfycby9OP9hU5XQcsrizsRVSoE-308-RAqTfgQiByiMCC02K5PlABYejNdtEtvY1m3caYHm/exec";
+
+        let mappingData = {};
+
+        // ===== INIT =====
+        window.onload = async function () {
+            // Check PDF Library
+            if (typeof PDFLib === 'undefined') {
+                document.getElementById('lib-status').classList.remove('hidden');
+            }
+
+            // Load mapping data from API
+            try {
+                const response = await fetch(`${API_URL}?action=mapping`);
+                const data = await response.json();
+                initData(data);
+            } catch (error) {
+                console.error('Error loading mapping:', error);
+                Swal.fire('ไม่สามารถโหลดข้อมูลได้', 'กรุณาลองรีเฟรชหน้าจอใหม่', 'error');
+            }
+        };
+
+        function initData(data) {
+            mappingData = data;
+            const facultySelect = document.getElementById('faculty');
+            facultySelect.innerHTML = '<option value="" disabled selected>-- เลือกสำนักวิชา --</option>';
+
+            Object.keys(data).forEach(key => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.text = key;
+                facultySelect.appendChild(option);
+            });
+        }
+
+        function onFacultyChange() {
+            const facultyName = document.getElementById('faculty').value;
+            const courseSelect = document.getElementById('course');
+
+            courseSelect.innerHTML = '<option value="" disabled selected>-- เลือกหลักสูตร --</option>';
+            courseSelect.disabled = false;
+            courseSelect.classList.remove('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
+            courseSelect.classList.add('bg-gray-50', 'text-gray-700', 'cursor-pointer');
+
+            if (mappingData[facultyName]) {
+                mappingData[facultyName].forEach(course => {
+                    const option = document.createElement('option');
+                    option.value = course;
+                    option.text = course;
+                    courseSelect.appendChild(option);
+                });
+            }
+        }
+
+        // ===== FILE HANDLING =====
+        function updateFileStatus(id) {
+            const fileInput = document.getElementById('file' + id);
+            const box = document.getElementById('box-file' + id);
+            const nameDisplay = box.querySelector('.file-name');
+
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+
+                if (file.size > 2 * 1024 * 1024) {
+                    Swal.fire('ไฟล์ใหญ่เกินไป', `ไฟล์นี้มีขนาด ${fileSizeMB} MB (ต้องไม่เกิน 2MB)`, 'warning');
+                    fileInput.value = "";
+                    nameDisplay.textContent = "ยังไม่ได้เลือกไฟล์";
+                    nameDisplay.classList.remove('text-green-600', 'font-medium');
+                    nameDisplay.classList.add('text-gray-400');
+                    box.classList.remove('completed');
+                    return;
+                }
+
+                nameDisplay.textContent = `${file.name} (${fileSizeMB} MB)`;
+                nameDisplay.classList.remove('text-gray-400');
+                nameDisplay.classList.add('text-green-600', 'font-medium');
+                box.classList.add('completed');
+            } else {
+                nameDisplay.textContent = "ยังไม่ได้เลือกไฟล์";
+                nameDisplay.classList.remove('text-green-600', 'font-medium');
+                nameDisplay.classList.add('text-gray-400');
+                box.classList.remove('completed');
+            }
+        }
+
+        // ===== UPLOAD PROCESS =====
+        async function processAndUpload() {
+            // Validation
+            const faculty = document.getElementById('faculty').value;
+            const course = document.getElementById('course').value;
+            const studentId = document.getElementById('studentId').value.trim();
+            const titleName = document.getElementById('titleName').value;
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+
+            if (!faculty || !course || !studentId || !titleName || !firstName || !lastName) {
+                Swal.fire('ข้อมูลไม่ครบ', 'กรุณากรอกข้อมูลให้ครบทุกช่อง', 'warning');
+                return;
+            }
+
+            if (typeof PDFLib === 'undefined') {
+                Swal.fire('ระบบขัดข้อง', 'ไม่สามารถโหลดไลบรารี PDF ได้ กรุณารีเฟรชหน้าจอ', 'error');
+                return;
+            }
+
+            const fullName = `${titleName}${firstName} ${lastName}`;
+
+            const files = [
+                document.getElementById('file1').files[0],
+                document.getElementById('file2').files[0],
+                document.getElementById('file3').files[0],
+                document.getElementById('file4').files[0]
+            ];
+
+            if (files.some(f => !f)) {
+                Swal.fire('เอกสารไม่ครบ', 'กรุณาอัปโหลดเอกสารให้ครบทั้ง 4 รายการ', 'warning');
+                return;
+            }
+
+            // UI Loading
+            const btn = document.getElementById('submit-btn');
+            const btnText = document.getElementById('btn-text');
+            const btnLoader = document.getElementById('btn-loader');
+            const statusText = document.getElementById('status-text');
+
+            btn.disabled = true;
+            btnText.classList.add('hidden');
+            btnLoader.classList.remove('hidden');
+
+            try {
+                // Merge PDFs
+                statusText.textContent = "กำลังรวมไฟล์ PDF...";
+                const mergedPdf = await PDFLib.PDFDocument.create();
+
+                for (let i = 0; i < files.length; i++) {
+                    statusText.textContent = `กำลังรวมไฟล์ PDF (${i + 1}/4)...`;
+                    const arrayBuffer = await files[i].arrayBuffer();
+                    const pdf = await PDFLib.PDFDocument.load(arrayBuffer);
+                    const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    pages.forEach(page => mergedPdf.addPage(page));
+                }
+
+                statusText.textContent = "กำลังส่งข้อมูลไปยังเซิร์ฟเวอร์...";
+                const pdfDataUri = await mergedPdf.saveAsBase64({ dataUri: true });
+
+                // Send to API
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        studentId: studentId,
+                        studentName: fullName,
+                        courseName: course,
+                        facultyName: faculty,
+                        fileData: pdfDataUri,
+                        mimeType: "application/pdf"
+                    })
+                });
+
+                // Note: With no-cors, we can't read the response
+                // So we assume success if no error was thrown
+
+                btn.disabled = false;
+                btnText.classList.remove('hidden');
+                btnLoader.classList.add('hidden');
+                statusText.textContent = "";
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'ส่งเอกสารสำเร็จ!',
+                    text: 'ระบบได้รับใบสมัครของคุณเรียบร้อยแล้ว',
+                    confirmButtonText: 'ตกลง',
+                    confirmButtonColor: '#4f46e5'
+                }).then(() => {
+                    window.location.reload();
+                });
+
+            } catch (error) {
+                console.error(error);
+                btn.disabled = false;
+                btnText.classList.remove('hidden');
+                btnLoader.classList.add('hidden');
+                statusText.textContent = "";
+
+                Swal.fire('เกิดข้อผิดพลาด', 'ไฟล์ PDF อาจมีปัญหา (เช่น ติดรหัสผ่าน) หรืออินเทอร์เน็ตไม่เสถียร: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+
+</html>

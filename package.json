@@ -1,0 +1,9 @@
+{
+  "name": "coop-app-upload",
+  "version": "1.0.0",
+  "description": "ระบบส่งใบสมัครงานสหกิจฯ มหาวิทยาลัยวลัยลักษณ์",
+  "scripts": {
+    "dev": "npx serve .",
+    "start": "npx serve ."
+  }
+}
