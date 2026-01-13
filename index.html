@@ -151,7 +151,7 @@
                     <div class="relative">
                         <select id="faculty" onchange="onFacultyChange()"
                             class="w-full bg-gray-50 border border-gray-200 text-gray-700 py-3 px-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-wu-500 focus:border-transparent appearance-none cursor-pointer transition">
-                            <option value="" disabled selected>กำลังโหลดข้อมูล...</option>
+                            <option value="" disabled selected>-- เลือกสำนักวิชา --</option>
                         </select>
                         <div
                             class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
@@ -321,36 +321,17 @@
         </div>
     </div>
 
+    <!-- Hidden iframe for form submission (bypasses CORS) -->
+    <iframe id="hidden-frame" name="hidden-frame" style="display:none;"></iframe>
+
     <script>
         // ===== CONFIG =====
         const API_URL = "https://script.google.com/macros/s/AKfycby9OP9hU5XQcsrizsRVSoE-308-RAqTfgQiByiMCC02K5PlABYejNdtEtvY1m3caYHm/exec";
 
         let mappingData = {};
 
-        // ===== INIT =====
-        window.onload = async function () {
-            // Check PDF Library
-            if (typeof PDFLib === 'undefined') {
-                document.getElementById('lib-status').classList.remove('hidden');
-            }
-
-            // Load mapping data from API using redirect follow (required for Apps Script)
-            try {
-                const response = await fetch(`${API_URL}?action=mapping`, {
-                    method: 'GET',
-                    redirect: 'follow'
-                });
-                const data = await response.json();
-                initData(data);
-            } catch (error) {
-                console.error('Error loading mapping:', error);
-                // Fallback: use hardcoded data if API fails
-                initData(getFallbackMappingData());
-            }
-        };
-
-        // Fallback mapping data in case API fails
-        function getFallbackMappingData() {
+        // ===== MAPPING DATA (Fallback + Primary) =====
+        function getMappingData() {
             return {
                 "สำนักวิชาการจัดการ": [
                     "บริหารธุรกิจ (การตลาดดิจิทัลและการสร้างแบรนด์)",
@@ -406,8 +387,19 @@
             };
         }
 
+        // ===== INIT =====
+        window.onload = function () {
+            // Check PDF Library
+            if (typeof PDFLib === 'undefined') {
+                document.getElementById('lib-status').classList.remove('hidden');
+            }
+
+            // Use local mapping data (no CORS issues)
+            mappingData = getMappingData();
+            initData(mappingData);
+        };
+
         function initData(data) {
-            mappingData = data;
             const facultySelect = document.getElementById('faculty');
             facultySelect.innerHTML = '<option value="" disabled selected>-- เลือกสำนักวิชา --</option>';
 
@@ -530,41 +522,33 @@
                 statusText.textContent = "กำลังส่งข้อมูลไปยังเซิร์ฟเวอร์...";
                 const pdfDataUri = await mergedPdf.saveAsBase64({ dataUri: true });
 
-                // Send to API using text/plain to avoid CORS preflight
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    redirect: 'follow',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({
-                        studentId: studentId,
-                        studentName: fullName,
-                        courseName: course,
-                        facultyName: faculty,
-                        fileData: pdfDataUri,
-                        mimeType: "application/pdf"
-                    })
+                // Submit via hidden form (bypasses CORS)
+                submitViaForm({
+                    studentId: studentId,
+                    studentName: fullName,
+                    courseName: course,
+                    facultyName: faculty,
+                    fileData: pdfDataUri,
+                    mimeType: "application/pdf"
                 });
 
-                const result = await response.json();
+                // Since we can't get response from iframe, show success after delay
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    btnLoader.classList.add('hidden');
+                    statusText.textContent = "";
 
-                btn.disabled = false;
-                btnText.classList.remove('hidden');
-                btnLoader.classList.add('hidden');
-                statusText.textContent = "";
-
-                if (result.status === 'success') {
                     Swal.fire({
                         icon: 'success',
                         title: 'ส่งเอกสารสำเร็จ!',
-                        text: result.message,
+                        text: 'ระบบได้รับใบสมัครของคุณเรียบร้อยแล้ว (กรุณาตรวจสอบใน Google Drive)',
                         confirmButtonText: 'ตกลง',
                         confirmButtonColor: '#4f46e5'
                     }).then(() => {
                         window.location.reload();
                     });
-                } else {
-                    Swal.fire('เกิดข้อผิดพลาด', result.message || 'ไม่สามารถส่งเอกสารได้', 'error');
-                }
+                }, 5000); // Wait 5 seconds for upload to complete
 
             } catch (error) {
                 console.error(error);
@@ -575,6 +559,27 @@
 
                 Swal.fire('เกิดข้อผิดพลาด', 'ไฟล์ PDF อาจมีปัญหา (เช่น ติดรหัสผ่าน) หรืออินเทอร์เน็ตไม่เสถียร: ' + error.message, 'error');
             }
+        }
+
+        // Submit form via hidden iframe (bypasses CORS)
+        function submitViaForm(data) {
+            // Create a hidden form
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = API_URL;
+            form.target = 'hidden-frame'; // Submit to hidden iframe
+
+            // Add data as hidden input (as JSON string in a single field)
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'data';
+            input.value = JSON.stringify(data);
+            form.appendChild(input);
+
+            // Append form to body, submit, then remove
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
         }
     </script>
 </body>

@@ -29,23 +29,35 @@ function doGet(e) {
 
 /**
  * doPost - API สำหรับรับไฟล์จาก Frontend
- * รองรับการเรียกจากเว็บภายนอก (Vercel)
+ * รองรับทั้ง JSON body และ form data
  */
 function doPost(e) {
   try {
-    const data = JSON.parse(e.postData.contents);
+    let data;
+    
+    // Check if data comes from form (hidden input with name="data")
+    if (e.parameter && e.parameter.data) {
+      data = JSON.parse(e.parameter.data);
+    } 
+    // Or from JSON body
+    else if (e.postData && e.postData.contents) {
+      data = JSON.parse(e.postData.contents);
+    } else {
+      throw new Error("No data received");
+    }
+    
     const result = uploadFile(data);
     
-    return ContentService
-      .createTextOutput(JSON.stringify(result))
-      .setMimeType(ContentService.MimeType.JSON);
+    // Return HTML response for form submission (shown in iframe)
+    return HtmlService.createHtmlOutput(
+      `<html><body><script>
+        window.parent.postMessage(${JSON.stringify(result)}, '*');
+      </script><h2>${result.status === 'success' ? '✅ ' + result.message : '❌ ' + result.message}</h2></body></html>`
+    );
   } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ 
-        status: 'error', 
-        message: 'เกิดข้อผิดพลาด: ' + error.toString() 
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return HtmlService.createHtmlOutput(
+      `<html><body><h2>❌ เกิดข้อผิดพลาด: ${error.toString()}</h2></body></html>`
+    );
   }
 }
 
