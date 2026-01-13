@@ -212,7 +212,7 @@
                 <h3 class="text-gray-700 font-semibold flex items-center">
                     <i class="fa-regular fa-file-pdf mr-2 text-wu-600"></i>
                     เอกสารประกอบการสมัคร
-                    <span class="text-xs font-normal text-red-500 ml-2">(PDF ไม่เกิน 2MB/ไฟล์)</span>
+                    <span class="text-xs font-normal text-red-500 ml-2">(PDF ไม่เกิน 4MB/ไฟล์)</span>
                 </h3>
 
                 <div class="grid grid-cols-1 gap-3">
@@ -440,8 +440,8 @@
                 const file = fileInput.files[0];
                 const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
 
-                if (file.size > 2 * 1024 * 1024) {
-                    Swal.fire('ไฟล์ใหญ่เกินไป', `ไฟล์นี้มีขนาด ${fileSizeMB} MB (ต้องไม่เกิน 2MB)`, 'warning');
+                if (file.size > 4 * 1024 * 1024) {
+                    Swal.fire('ไฟล์ใหญ่เกินไป', `ไฟล์นี้มีขนาด ${fileSizeMB} MB (ต้องไม่เกิน 4MB)`, 'warning');
                     fileInput.value = "";
                     nameDisplay.textContent = "ยังไม่ได้เลือกไฟล์";
                     nameDisplay.classList.remove('text-green-600', 'font-medium');

@@ -154,7 +154,7 @@ function getMappingData() {
 function uploadFile(data) {
   try {
     const { studentId, studentName, mimeType, fileData, courseName, facultyName } = data;
-    const newFileName = `ใบสมัครงาน_${studentName.replace(/\s+/g, '_')}.pdf`;
+    const newFileName = `ใบสมัครงาน${studentName}.pdf`;
 
     const mainFolder = DriveApp.getFolderById(FOLDER_ID);
     
