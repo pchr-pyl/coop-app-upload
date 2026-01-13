@@ -530,11 +530,11 @@
                 statusText.textContent = "กำลังส่งข้อมูลไปยังเซิร์ฟเวอร์...";
                 const pdfDataUri = await mergedPdf.saveAsBase64({ dataUri: true });
 
-                // Send to API
+                // Send to API using text/plain to avoid CORS preflight
                 const response = await fetch(API_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify({
                         studentId: studentId,
                         studentName: fullName,
@@ -545,23 +545,26 @@
                     })
                 });
 
-                // Note: With no-cors, we can't read the response
-                // So we assume success if no error was thrown
+                const result = await response.json();
 
                 btn.disabled = false;
                 btnText.classList.remove('hidden');
                 btnLoader.classList.add('hidden');
                 statusText.textContent = "";
 
-                Swal.fire({
-                    icon: 'success',
-                    title: 'ส่งเอกสารสำเร็จ!',
-                    text: 'ระบบได้รับใบสมัครของคุณเรียบร้อยแล้ว',
-                    confirmButtonText: 'ตกลง',
-                    confirmButtonColor: '#4f46e5'
-                }).then(() => {
-                    window.location.reload();
-                });
+                if (result.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'ส่งเอกสารสำเร็จ!',
+                        text: result.message,
+                        confirmButtonText: 'ตกลง',
+                        confirmButtonColor: '#4f46e5'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire('เกิดข้อผิดพลาด', result.message || 'ไม่สามารถส่งเอกสารได้', 'error');
+                }
 
             } catch (error) {
                 console.error(error);
